@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import back %}
+{% block title %}Decide · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set g = a.primary_goal %}
+{% set route = state.route %}
+{{ back("/withdraw/borrow") }}
+<h1 class="h1">Now you can decide with the full picture.</h1>
+<p class="lede mt-2">Here's everything in one place. The decision is yours.</p>
+
+<section class="card mt-8" aria-label="Decision summary">
+  <dl class="grid sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 divide-line">
+    {% set items = [
+      ("Need", inr(a.request.amount)),
+      ("Date", nice_date(a.request.needed_by)),
+      ("Reason", a.request.reason or "Not selected"),
+      ("Portfolio", inr_short(a.invested) ~ " invested"),
+      ("Accessible cash", inr_short(a.cash)),
+      ("Impact", pct(a.pct) ~ " portfolio impact"),
+      ("Goal", (g.goal.name ~ " goal " ~ ("affected" if g.affected else "not affected")) if g else "No goals tracked"),
+      ("Funding route", ("Borrow against investments" if route == "borrow" else (plan_text if a.plan else "Withdraw (source not chosen)"))),
+    ] %}
+    {% for label, value in items %}
+    <div class="px-5 sm:px-6 py-4 {{ 'sm:border-t sm:border-line' if loop.index > 4 }} {{ 'lg:border-l lg:border-line' if loop.index not in (1, 5) }}">
+      <dt class="text-sm muted">{{ label }}</dt>
+      <dd class="fig text-[22px] mt-1 font-semibold">{{ value }}</dd>
+    </div>
+    {% endfor %}
+  </dl>
+  {% if a.plan_materiality and route != "borrow" %}
+  <div class="border-t border-line px-5 sm:px-6 py-4 text-sm">
+    <p class="font-medium">For your funding plan</p>
+    <ul class="mt-1 space-y-1 muted">
+      {% for t in a.plan_materiality.triggers %}{% if t.key in ("liquidity", "allocation") %}<li>{{ t.reason_copy }}. {{ t.detail }}</li>{% endif %}{% endfor %}
+      {% if a.plan.received != a.request.amount %}<li>Estimated amount received: {{ inr(a.plan.received) }} (illustrative)</li>{% endif %}
+    </ul>
+  </div>
+  {% elif route == "borrow" %}
+  <div class="border-t border-line px-5 sm:px-6 py-4 text-sm muted">
+    Borrowing {{ inr(a.borrow.borrowable) }}: indicative {{ a.borrow.rate_band }}, illustrative {{ inr(a.borrow.interest_1y) }} interest for one year. Pledged assets remain pledged until repayment.
+  </div>
+  {% endif %}
+</section>
+
+<form method="post" action="/withdraw/decide" class="mt-8 grid sm:grid-cols-2 gap-3 max-w-2xl">
+  {% if route == "borrow" %}
+  <button name="action" value="borrow" class="btn-primary !py-4 text-[19px]">Borrow {{ inr_short(a.borrow.borrowable) }}</button>
+  <button name="action" value="withdraw" class="btn-secondary !py-4 text-[19px]">Withdraw {{ inr_short(a.request.amount) }}</button>
+  {% else %}
+  <button name="action" value="withdraw" class="btn-primary !py-4 text-[19px]">Withdraw {{ inr_short(a.request.amount) }}</button>
+  {% endif %}
+  <a href="/withdraw/sources" class="btn-secondary !py-4 text-[19px] {{ 'sm:col-span-2' if route == 'borrow' }}">Go back and compare</a>
+</form>
+<p class="text-sm muted mt-4 max-w-[60ch]">Demo mode: recording a decision doesn't place any order or move any money.</p>
+{% endblock %}

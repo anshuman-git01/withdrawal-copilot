@@ -1,0 +1,8 @@
+<div class="space-y-2">
+  <div class="ml-8 rounded-3xl rounded-br-md bg-ink text-white px-4 py-2.5 text-[17px]">{{ question }}</div>
+  <div class="mr-4 rounded-3xl rounded-bl-md bg-white border border-line px-4 py-3 text-[17px] leading-relaxed">
+    <p class="whitespace-pre-line">{{ answer }}</p>
+    <p class="mt-2 text-[0.85rem] muted">{{ source }}</p>
+    {% if note %}<p class="mt-1 text-[0.85rem] text-amber">{{ note }}</p>{% endif %}
+  </div>
+</div>

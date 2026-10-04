@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_pill %}
+{% block title %}Portfolio · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set h = a.profile.holdings %}
+{% set colors = {"stocks": "#2B2B2B", "etfs": "#9C968C", "mf": "#DD4B2B", "fd": "#F2B19C"} %}
+
+{# Deck-style hero: the need-first promise, in the brand orange #}
+<section class="rounded-[2rem] bg-brand-bright text-white px-6 py-8 sm:px-10 sm:py-10 overflow-hidden relative">
+  <p class="text-white/85 font-medium" data-greeting>Good morning</p>
+  <h1 class="font-display font-extrabold tracking-[-0.04em] leading-[0.95] text-[2.6rem] sm:text-[4rem] mt-2 max-w-[14ch]">Need money for something?</h1>
+  <p class="text-lg sm:text-xl font-semibold text-ink/90 mt-4 max-w-[44ch]">Tell us what you need. Before you take the money, see what it changes.</p>
+  <div class="mt-7 flex flex-wrap items-center gap-2 text-[0.95rem] font-bold">
+    <a href="/withdraw/start" class="btn bg-ink text-white hover:bg-black !rounded-xl !px-6">I need money</a>
+    {% for s in ["Understand", "Compare", "Decide", "Recover"] %}
+    <span aria-hidden="true" class="text-white/80 px-1">›</span>
+    <span class="rounded-xl bg-paper text-ink px-4 py-3">{{ s }}</span>
+    {% endfor %}
+  </div>
+</section>
+
+<h2 class="font-display font-extrabold tracking-tight text-[1.9rem] mt-12">Your investments, in one view</h2>
+
+<div class="mt-5 grid lg:grid-cols-3 gap-5">
+  <section class="card pad lg:col-span-2" aria-labelledby="inv-title">
+    <div class="flex items-center gap-3">
+      <span class="icon-chip" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span>
+      <h3 id="inv-title" class="eyebrow">Invested portfolio</h3>
+    </div>
+    <p class="fig text-[3.2rem] sm:text-[4rem] leading-none mt-4">{{ inr(a.invested) }}</p>
+    <p class="muted mt-2">Stocks + ETFs + Mutual Funds + FD</p>
+
+    <div class="mt-7 flex h-4 rounded-full overflow-hidden bg-faint gap-[3px]" role="img"
+         aria-label="Allocation: {% for k in ASSET_KEYS %}{{ ASSET_LABELS[k] }} {{ pct(h.get(k) / a.invested * 100 if a.invested else 0) }}{{ ', ' if not loop.last }}{% endfor %}">
+      {% for k in ASSET_KEYS %}{% if h.get(k) %}
+      <span class="rounded-full" style="width: {{ h.get(k) / a.invested * 100 }}%; background: {{ colors[k] }}"></span>
+      {% endif %}{% endfor %}
+    </div>
+
+    <ul class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {% for k in ASSET_KEYS %}
+      <li class="rounded-2xl bg-paper px-4 py-3.5">
+        <div class="flex items-center gap-2 text-[0.95rem] muted"><span class="w-3 h-3 rounded-full" style="background: {{ colors[k] }}"></span>{{ "FD" if k == "fd" else ASSET_LABELS[k] }}</div>
+        <p class="fig text-[1.6rem] mt-1">{{ inr_short(h.get(k)) }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <div class="grid gap-5 content-start">
+    <section class="card pad" aria-labelledby="cash-title">
+      <div class="flex items-center gap-3">
+        <span class="icon-chip !bg-moss-soft !text-moss" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 10h20M6 15h4"/></svg></span>
+        <h3 id="cash-title" class="eyebrow">Accessible cash</h3>
+      </div>
+      <p class="fig text-[2.4rem] leading-none mt-4">{{ inr(a.cash) }}</p>
+      <p class="muted mt-2">Available without selling an investment</p>
+    </section>
+
+    {% for g in a.goals %}
+    <section class="card pad" aria-label="{{ g.goal.name }} goal">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="icon-chip !bg-amber-soft !text-amber" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5"/></svg></span>
+          <h3 class="h2">{{ g.goal.name }} goal</h3>
+        </div>
+        {{ status_pill(g.on_track_before, "On track", "Below trajectory") }}
+      </div>
+      <p class="muted mt-3">Target {{ inr_short(g.goal.target_amount) }} by {{ g.goal.target_date.strftime('%b %Y') }}</p>
+      <a href="/goals" class="link mt-3 inline-block">View goal</a>
+    </section>
+    {% else %}
+    <section class="card pad">
+      <h3 class="h2">No goals tracked yet</h3>
+      <p class="muted mt-1">Add a goal to see how withdrawals change its trajectory.</p>
+      <a href="/goals" class="link mt-3 inline-block">Add a goal</a>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="cta-bar sm:hidden">
+  <a href="/withdraw/start" class="btn-primary w-full">I need money</a>
+</div>
+{% endblock %}

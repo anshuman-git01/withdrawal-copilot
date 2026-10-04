@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import why, back, status_pill %}
+{% block title %}Goal impact · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set g = a.primary_goal %}
+{{ back("/withdraw/impact") }}
+{% if not g %}
+<h1 class="h1">No goals tracked yet</h1>
+<p class="lede mt-2">Add a goal to see how a withdrawal changes its trajectory.</p>
+<a href="/goals" class="btn-primary mt-6">Add a goal</a>
+{% else %}
+<h1 class="h1">What happens to your {{ g.goal.name }} goal?</h1>
+<p class="lede mt-2">{% if g.affected %}Withdrawing {{ inr_short(a.request.amount) }} changes the current trajectory of your {{ g.goal.name }} goal.{% else %}This withdrawal doesn't draw on your {{ g.goal.name }} goal.{% endif %}</p>
+
+<div class="mt-8 grid md:grid-cols-2 gap-4 sm:gap-5">
+  <section class="card pad">
+    <h2 class="text-sm muted">Before withdrawal</h2>
+    <div class="mt-3 flex items-center justify-between gap-3"><span class="text-[17px]">{{ g.goal.name }} goal</span>{{ status_pill(g.on_track_before, "On track", "Below current trajectory") }}</div>
+    <div class="mt-2 flex items-center justify-between gap-3"><span class="text-[17px]">Current trajectory</span>{{ status_pill(g.on_track_before, "On track", "Below target") }}</div>
+  </section>
+  <section class="card pad {{ 'border-amber/40' if g.triggered }}">
+    <h2 class="text-sm muted">After {{ inr_short(a.request.amount) }} withdrawal</h2>
+    <div class="mt-3 flex items-center justify-between gap-3"><span class="text-[17px]">{{ g.goal.name }} goal</span>{{ status_pill(g.status_after == "On track", "On track", "Below current trajectory") }}</div>
+    <div class="mt-2 flex items-center justify-between gap-3"><span class="text-[17px]">Drawn from this goal</span><span class="fig">{{ inr_short(g.reduction) }}</span></div>
+  </section>
+</div>
+
+{# Simplified path: straight lines between today's balance and the projected value at the target date #}
+{% set top = ([g.projected_before, g.goal.target_amount] | max) * 1.1 %}
+{% set W, H, L, R, T, B = 640, 240, 16, 16, 20, 36 %}
+{% macro y(v, top) %}{{ 20 + 184 * (1 - v / top) }}{% endmacro %}
+<section class="card pad mt-5" aria-labelledby="path-title">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="path-title" class="h2">Today, current path, {{ g.goal.name }} goal</h2>
+    <div class="flex gap-4 text-sm">
+      <span class="flex items-center gap-2"><span class="w-6 h-1 rounded bg-ink"></span>Current path</span>
+      {% if g.affected %}<span class="flex items-center gap-2"><span class="w-5 border-t-2 border-dashed border-brand-bright"></span>After withdrawal</span>{% endif %}
+    </div>
+  </div>
+  <svg viewBox="0 0 {{ W }} {{ H }}" class="w-full h-auto mt-4" role="img"
+       aria-label="Projected {{ g.goal.name }} goal path from today to {{ nice_date(g.goal.target_date) }}: before withdrawal {{ g.status_before | lower }}, after withdrawal {{ g.status_after | lower }}.">
+    <line x1="{{ L }}" x2="{{ W - R }}" y1="{{ y(g.goal.target_amount, top) }}" y2="{{ y(g.goal.target_amount, top) }}" stroke="#1E2226" stroke-opacity=".35" stroke-dasharray="2 4"/>
+    <text x="{{ W - R }}" y="{{ y(g.goal.target_amount, top) | float - 8 }}" text-anchor="end" font-size="15" fill="#666B70">Goal {{ inr_short(g.goal.target_amount) }}</text>
+    <line x1="{{ L }}" x2="{{ W - R }}" y1="{{ H - B }}" y2="{{ H - B }}" stroke="#E2E0D8"/>
+    <line x1="{{ L }}" y1="{{ y(g.saved_before, top) }}" x2="{{ W - R }}" y2="{{ y(g.projected_before, top) }}" stroke="#2B2B2B" stroke-width="3.5" stroke-linecap="round"/>
+    {% if g.affected %}<line x1="{{ L }}" y1="{{ y(g.saved_after, top) }}" x2="{{ W - R }}" y2="{{ y(g.projected_after, top) }}" stroke="#DD4B2B" stroke-width="3.5" stroke-dasharray="8 6" stroke-linecap="round"/>{% endif %}
+    <circle cx="{{ L }}" cy="{{ y(g.saved_before, top) }}" r="5" fill="#2B2B2B"/>
+    <text x="{{ L }}" y="{{ H - 12 }}" font-size="15" fill="#666B70">Today</text>
+    <text x="{{ W - R }}" y="{{ H - 12 }}" text-anchor="end" font-size="15" fill="#666B70">{{ nice_date(g.goal.target_date) }}</text>
+  </svg>
+  {{ why("goal_trajectory", g.explain + ["Path drawn as a straight line for readability. Projections use your goal inputs and are not forecasts."], "Based on your goal inputs") }}
+</section>
+
+{% if g.affected %}
+<section class="mt-10" aria-labelledby="rec-title">
+  <h2 id="rec-title" class="text-[26px] font-semibold tracking-tight">One withdrawal changes the path, but you have options.</h2>
+  <p class="muted mt-1">Scenarios, not recommendations.</p>
+  {% include "partials/scenarios.html" %}
+</section>
+{% endif %}
+{% endif %}
+
+<div class="cta-bar mt-8">
+  <a href="/withdraw/sources" class="btn-primary w-full sm:w-auto">Compare ways to fund</a>
+</div>
+{% endblock %}

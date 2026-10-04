@@ -1,0 +1,15 @@
+<div class="bg-paper">
+  <ol class="mx-auto max-w-page px-4 sm:px-6 pt-5 flex items-center gap-2 overflow-x-auto" aria-label="Progress">
+    {% for key, label in steps %}
+    {% set n = loop.index %}
+    <li class="flex items-center gap-2 shrink-0" {% if n == step %}aria-current="step"{% endif %}>
+      <span class="inline-flex items-center gap-2 rounded-xl px-3 sm:px-4 py-2 text-[0.95rem] font-bold
+        {{ 'bg-brand text-white' if n == step else ('bg-ink text-white' if n < step else 'bg-white text-muted border border-line') }}">
+        {% if n < step %}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span class="sr-only">Done:</span>{% else %}<span>{{ n }}</span>{% endif %}
+        <span class="{{ '' if n == step else 'hidden md:inline' }}">{{ label }}</span>
+      </span>
+      {% if not loop.last %}<span class="text-muted font-bold" aria-hidden="true">›</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</div>

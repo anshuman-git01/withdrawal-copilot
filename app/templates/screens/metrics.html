@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Metrics · Withdrawal Copilot{% endblock %}
+{% block content %}
+<h1 class="h1">How success is measured</h1>
+<p class="lede mt-2">North Star: contextual decision completion rate. The share of significant withdrawal attempts where the person saw the decision context and reached a decision, whatever they decided.</p>
+<div class="mt-4 flex gap-2 text-sm">
+  <a href="/metrics" class="pill {{ 'bg-brand text-white' if scope != 'all' else 'bg-white border border-line' }}">This browser</a>
+  <a href="/metrics?scope=all" class="pill {{ 'bg-brand text-white' if scope == 'all' else 'bg-white border border-line' }}">All sessions</a>
+</div>
+
+<div class="mt-6 grid md:grid-cols-3 gap-4">
+  <section class="card pad md:col-span-1">
+    <h2 class="text-sm muted">Contextual decision completion</h2>
+    <p class="fig text-[64px] leading-none mt-2 text-brand">{{ pct(m.north_star) if m.north_star is not none else "—" }}</p>
+    <p class="text-sm muted mt-2">{{ m.completed_with_context }} of {{ m.significant_attempts }} significant attempts</p>
+  </section>
+  <section class="card pad md:col-span-2">
+    <h2 class="h2">Not optimised for</h2>
+    <p class="text-[17px] muted mt-1">Lower withdrawal rate, retained AUM, cancelled withdrawals, longer investment duration, or revenue from preventing withdrawals.</p>
+    <h2 class="h2 mt-4">Guardrails</h2>
+    <p class="text-[17px] muted mt-1">Calculation accuracy (automated tests), AI explanation accuracy (number guardrail and fallbacks below), false behaviour-check triggers, complaints, emergency-delay incidents, dark-pattern incidents.</p>
+  </section>
+</div>
+
+<div class="mt-6 grid md:grid-cols-2 gap-4">
+  <section class="card pad">
+    <h2 class="h2">Events</h2>
+    <table class="w-full text-sm mt-3"><tbody class="divide-y divide-line">
+      {% for name, c in m.counts %}<tr><td class="py-1.5">{{ name }}</td><td class="py-1.5 text-right tabular-nums">{{ c }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  <section class="card pad">
+    <div class="flex items-baseline justify-between"><h2 class="h2">Recent</h2>
+      <form method="post" action="/metrics/clear"><button class="btn-quiet !min-h-[32px] !py-1 text-sm">Clear this browser's events</button></form></div>
+    <ol class="mt-3 space-y-1.5 text-sm max-h-[480px] overflow-y-auto">
+      {% for e in m.recent %}<li class="flex gap-3"><span class="muted tabular-nums">{{ e.ts }}</span><span>{{ e.name }}{% if e.props %} <span class="muted">{{ e.props | tojson }}</span>{% endif %}</span></li>
+      {% else %}<li class="muted">No events yet. Walk through a withdrawal to see them.</li>{% endfor %}
+    </ol>
+  </section>
+</div>
+{% endblock %}

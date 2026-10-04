@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}How it works · Withdrawal Copilot{% endblock %}
+{% block content %}
+<h1 class="h1">How Withdrawal Copilot works</h1>
+<p class="lede mt-2">Don't stop the withdrawal. Make it understandable.</p>
+
+<section class="mt-8 grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8">
+  <ol class="space-y-0">
+    {% for title, body in [
+      ("Verified financial data", "Your holdings, accessible cash, goals and settings."),
+      ("Deterministic financial engine", "Every rupee figure: percentages, costs, amounts received, interest. Tested against fixed values."),
+      ("Materiality engine", "Four transparent checks. Any one makes a withdrawal significant. No score."),
+      ("Scenario engine", "Goal trajectories and recovery scenarios from your own inputs."),
+      ("LLM explanation layer", "Gemini or Groq explain the engine's outputs in plain language. Answers that mention a number the engine didn't produce, or that recommend, are replaced by the scripted explanation."),
+      ("You decide", "Withdraw, borrow or change the amount. Nothing is ever sold automatically."),
+    ] %}
+    <li class="relative pl-10 pb-6">
+      {% if not loop.last %}<span class="absolute left-[13px] top-7 bottom-0 w-px bg-line" aria-hidden="true"></span>{% endif %}
+      <span class="absolute left-0 top-0 grid place-items-center w-7 h-7 rounded-full {{ 'bg-brand text-white' if loop.last else 'bg-brand-soft text-brand' }} text-sm font-semibold">{{ loop.index }}</span>
+      <h2 class="font-semibold">{{ title }}</h2>
+      <p class="muted text-[17px] mt-0.5">{{ body }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+  <div class="space-y-5">
+    <section class="card pad">
+      <h2 class="h2">What it connects</h2>
+      <p class="text-[17px] muted mt-1">Redemption amounts, exit loads, taxes, goals and borrowing already exist in separate places. Withdrawal Copilot connects them around one question: I need this much. What happens if I take it out?</p>
+    </section>
+    <section class="card pad">
+      <h2 class="h2">What it never does</h2>
+      <p class="text-[17px] muted mt-1">Execute transactions, pick stocks, predict markets, recommend a product, or make withdrawing harder.</p>
+    </section>
+    <section class="card pad">
+      <h2 class="h2">Coverage</h2>
+      <p class="text-[17px] muted mt-1">Now: stocks, ETFs, mutual funds, fixed deposits and linked accessible cash. Later: bonds, NPS, PPF, gold and SGBs, REITs and InvITs, ULIPs.</p>
+    </section>
+  </div>
+</section>
+<a href="/withdraw/start" class="btn-primary mt-4">Try a withdrawal</a>
+{% endblock %}

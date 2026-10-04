@@ -1,0 +1,22 @@
+{% set g = a.primary_goal %}
+<div class="mt-4 grid md:grid-cols-3 gap-4" x-data="{ picked: '{{ state.get('scenario', '') }}' }">
+  {% set items = [
+    ("increase", "Increase monthly contribution", "Add more each month",
+      ("About " ~ inr(g.extra_monthly_needed) ~ " more a month") if g.extra_monthly_needed else ("Not needed: still on track" if not g.triggered else "Not estimated in this prototype")),
+    ("extend", "Extend goal timeline", "Reach the goal later",
+      ("About " ~ g.extension_months ~ " month" ~ ("s" if g.extension_months != 1 else "") ~ " later") if g.extension_months else ("Not needed: still on track" if not g.triggered else "Not estimated in this prototype")),
+    ("keep", "Keep current contribution", "Accept a slower trajectory",
+      "Projected " ~ inr_short(g.projected_after) ~ " by " ~ g.goal.target_date.strftime('%b %Y')),
+  ] %}
+  {% for key, title, sub, figure in items %}
+  <button type="button" class="card pad text-left transition-colors hover:border-brand/40"
+          :class="picked === '{{ key }}' ? '!border-brand ring-1 ring-brand' : ''" :aria-pressed="picked === '{{ key }}'"
+          @click="picked = '{{ key }}'" hx-post="/withdraw/recover/scenario" hx-vals='{"scenario": "{{ key }}"}' hx-swap="none">
+    <span class="text-sm muted">Option {{ loop.index }}</span>
+    <span class="block h2 mt-1">{{ title }}</span>
+    <span class="block text-[17px] muted mt-1">{{ sub }}</span>
+    <span class="block fig text-lg mt-4">{{ figure }}</span>
+  </button>
+  {% endfor %}
+</div>
+<p class="text-[0.85rem] muted mt-3">Figures come from your goal inputs (target, date, amount saved, monthly contribution, assumed return). Edit them on the <a class="link" href="/goals">Goals</a> page.</p>

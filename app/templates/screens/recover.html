@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Recover · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set g = a.primary_goal %}
+{% set d = state.decision %}
+<div class="flex items-center gap-3">
+  <span class="grid place-items-center w-10 h-10 rounded-full bg-moss-soft text-moss">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+  <p class="text-[19px] font-medium" role="status">Decision recorded: {{ "borrow " ~ inr_short(a.borrow.borrowable) if d.action == "borrow" else "withdraw " ~ inr_short(d.amount) }}</p>
+</div>
+<h1 class="h1 mt-6">Before you leave, here's what to recover.</h1>
+
+{% if d.action == "borrow" %}
+<section class="card pad mt-8 max-w-3xl">
+  <h2 class="h2">Loan repayment</h2>
+  <p class="text-[17px] mt-2">Illustrative {{ inr(a.borrow.interest_1y) }} interest for one year at {{ num(a.borrow.rate_mid) }}% p.a. Pledged assets remain pledged until you repay.</p>
+  {% if g %}<p class="text-[17px] muted mt-2">Your {{ g.goal.name }} goal corpus isn't sold down on this route, so its trajectory depends on repaying without drawing on it.</p>{% endif %}
+</section>
+{% elif g and g.triggered %}
+<section class="mt-8">
+  <div class="flex items-center gap-3"><h2 class="h2">{{ g.goal.name }} goal</h2><span class="pill bg-amber-soft text-amber">Trajectory affected</span></div>
+  <p class="muted mt-1">Scenarios, not recommendations.</p>
+  {% include "partials/scenarios.html" %}
+</section>
+{% else %}
+<section class="card pad mt-8 max-w-3xl"><p class="text-[17px]">No tracked goal falls below its trajectory after this decision. Nothing to recover.</p></section>
+{% endif %}
+
+<div id="recovery-plan" class="mt-8" aria-live="polite">
+  <button class="btn-primary" hx-get="/withdraw/recover/plan" hx-target="#recovery-plan" hx-swap="innerHTML">View my recovery plan</button>
+</div>
+
+<p class="mt-10 text-[19px] max-w-[58ch]">Your withdrawal decision is yours. This screen simply helps you understand what happens next.</p>
+<div class="mt-6 flex flex-wrap gap-3">
+  <a href="/" class="btn-secondary">Back to portfolio</a>
+  <a href="/withdraw/start" class="btn-quiet">Start a new withdrawal</a>
+</div>
+{% endblock %}

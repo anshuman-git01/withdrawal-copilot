@@ -1,0 +1,18 @@
+{% if amount and amount > 0 %}
+<div class="rounded-2xl bg-brand-soft px-5 py-4">
+  <p class="text-[19px]">
+    You need <strong class="fig">{{ inr_short(amount) }}</strong>{% if reason %}
+    {%- set matched = goals | selectattr("category", "equalto", reason) | list %}
+    {% if matched %} for your {{ reason }} goal{% else %} for {{ reason | lower if reason != "Other" else "another reason" }}{% endif %}{% endif %}{% if needed_by %} by {{ nice_date(needed_by) }}{% endif %}.
+  </p>
+  {% if pct_value is not none %}<p class="text-sm muted mt-1">That's {{ pct(pct_value) }} of your invested portfolio.</p>{% endif %}
+</div>
+{% endif %}
+{% for n in v.notices %}
+<div class="rounded-2xl bg-amber-soft text-amber px-5 py-3 mt-3 text-[17px]">
+  {{ n }} <a href="/withdraw/sources" class="link !text-amber">Compare multiple sources</a>
+</div>
+{% endfor %}
+{% if v.errors and amount is not none %}
+<ul class="mt-3 text-sm text-cost space-y-1">{% for k, e in v.errors.items() %}<li>{{ e }}</li>{% endfor %}</ul>
+{% endif %}

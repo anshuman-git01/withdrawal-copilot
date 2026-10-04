@@ -1,0 +1,25 @@
+{% set g = a.primary_goal %}
+{% set d = state.decision %}
+{% set labels = {"increase": "Increase monthly contribution", "extend": "Extend goal timeline", "keep": "Keep current contribution"} %}
+<section class="card pad max-w-3xl">
+  <h2 class="h2">Your recovery plan</h2>
+  <ol class="mt-4 space-y-4 text-[17px]">
+    <li class="flex gap-3"><span class="fig text-muted w-5 shrink-0">1</span><div><p class="font-medium">What you decided</p>
+      <p class="muted">{{ ("Borrow " ~ inr(a.borrow.borrowable) ~ " against eligible investments") if d.action == "borrow" else ("Withdraw " ~ inr(d.amount) ~ (" from " ~ plan_text if plan_text else "")) }} by {{ nice_date(a.request.needed_by) }}.</p></div></li>
+    {% if d.action == "borrow" %}
+    <li class="flex gap-3"><span class="fig text-muted w-5 shrink-0">2</span><div><p class="font-medium">Repayment</p>
+      <p class="muted">About {{ inr(a.borrow.interest_1y) }} illustrative interest per year at {{ num(a.borrow.rate_mid) }}%. Actual terms depend on the lender.</p></div></li>
+    {% elif g and g.triggered %}
+    <li class="flex gap-3"><span class="fig text-muted w-5 shrink-0">2</span><div><p class="font-medium">{{ g.goal.name }} goal scenario</p>
+      {% set sc = state.get("scenario") %}
+      {% if sc == "increase" and g.extra_monthly_needed %}<p class="muted">Add about {{ inr(g.extra_monthly_needed) }} a month to your {{ inr(g.goal.monthly_contribution) }} contribution.</p>
+      {% elif sc == "extend" and g.extension_months %}<p class="muted">Move the target from {{ g.goal.target_date.strftime('%b %Y') }} by about {{ g.extension_months }} month{{ "s" if g.extension_months != 1 }}.</p>
+      {% elif sc == "keep" %}<p class="muted">Keep {{ inr(g.goal.monthly_contribution) }} a month; projected {{ inr(g.projected_after) }} against a {{ inr(g.goal.target_amount) }} target.</p>
+      {% else %}<p class="muted">No scenario picked yet. Choose one above to add it to this plan.</p>{% endif %}
+    </div></li>
+    {% endif %}
+    <li class="flex gap-3"><span class="fig text-muted w-5 shrink-0">3</span><div><p class="font-medium">Keep your inputs current</p>
+      <p class="muted">Update your goal and holdings after the money moves so future scenarios stay accurate. <a class="link" href="/goals">Edit goals</a></p></div></li>
+  </ol>
+  <p class="text-[0.85rem] muted mt-5">Scenarios, not recommendations. Based on your inputs and illustrative assumptions.</p>
+</section>

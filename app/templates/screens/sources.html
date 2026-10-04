@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import back %}
+{% block title %}Compare sources · Withdrawal Copilot{% endblock %}
+{% block content %}
+{{ back("/withdraw/impact") }}
+<h1 class="h1 max-w-[30ch]">Which source gets you {{ inr_short(a.request.amount) }} with the least disruption?</h1>
+<p class="lede mt-2">Compare what you receive, what it costs, and what changes. Nothing is selected for you.</p>
+
+{% if a.plan %}
+<div class="mt-6 rounded-2xl bg-brand-soft px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+  <p class="text-[17px]"><span class="font-medium">Your funding plan:</span> {{ plan_text }}{% if a.plan.gap %} <span class="text-amber">({{ inr_short(a.plan.gap) }} still to cover)</span>{% endif %}</p>
+  <form method="post" action="/withdraw/plan/clear"><button class="btn-quiet !min-h-[36px] !py-1.5">Clear plan</button></form>
+</div>
+{% endif %}
+
+<div class="mt-8 flex items-center justify-between gap-4 flex-wrap">
+  <label class="flex items-center gap-3 cursor-pointer text-[17px]">
+    <input type="checkbox" class="w-5 h-5 accent-[#C9411F]" name="full_only" value="1" {% if full_only %}checked{% endif %}
+           hx-get="/withdraw/sources/table" hx-target="#sources" hx-swap="innerHTML" hx-include="this">
+    Show only sources that can fully cover {{ inr_short(a.request.amount) }}
+  </label>
+  <p class="text-sm muted">Illustrative mock estimates</p>
+</div>
+
+<div id="sources" class="mt-4">{% include "partials/sources_table.html" %}</div>
+
+<section class="mt-12" aria-labelledby="mix-title" id="mix">
+  <h2 id="mix-title" class="text-[26px] font-semibold tracking-tight">Choose how to fund</h2>
+  <p class="muted mt-1 max-w-[62ch]">Pick one source or split the amount yourself. Sources are never combined automatically.</p>
+  {% set current = (a.plan.allocations if a.plan else {}) %}
+  <form method="post" action="/withdraw/plan" class="mt-5 grid lg:grid-cols-[minmax(0,1fr)_360px] gap-5"
+        hx-post="/withdraw/sources/mix" hx-trigger="input delay:250ms, load" hx-target="#mix-result" hx-swap="innerHTML">
+    <div class="card divide-y divide-line">
+      {% for s in a.sources %}
+      <div class="px-5 py-4 flex items-center gap-4">
+        <label for="mix_{{ s.key }}" class="flex-1 min-w-0">
+          <span class="block font-medium">{{ s.label }}</span>
+          <span class="block text-sm muted">Up to {{ inr(s.available) }}</span>
+        </label>
+        <div class="relative w-40 shrink-0">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 muted" aria-hidden="true">₹</span>
+          <input id="mix_{{ s.key }}" name="mix_{{ s.key }}" inputmode="numeric" autocomplete="off" data-indian-number
+                 class="mix-input field !pl-7 text-right" placeholder="0" value="{{ inr(current[s.key])[1:] if current.get(s.key) else '' }}">
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div>
+      <div id="mix-result" class="card pad lg:sticky lg:top-24" aria-live="polite"><p class="muted text-sm">Enter amounts to see the total.</p></div>
+    </div>
+  </form>
+</section>
+
+<p class="mt-12 text-[19px] leading-relaxed max-w-[60ch] border-l-2 border-brand pl-4">Most investment interfaces show what you can withdraw. Withdrawal Copilot shows what that withdrawal changes.</p>
+
+<div class="cta-bar mt-8">
+  <a href="/withdraw/borrow" class="btn-primary w-full sm:w-auto">Compare sell vs borrow</a>
+</div>
+{% endblock %}

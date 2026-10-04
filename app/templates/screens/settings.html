@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Portfolio & assumptions · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set p = a.profile %}
+{% set asm = p.assumptions %}
+{% set t = p.thresholds %}
+<h1 class="h1">Portfolio &amp; assumptions</h1>
+<p class="lede mt-2">Every number the engine uses lives here. Change it, and every screen updates consistently.</p>
+{% if saved %}<p class="mt-4 rounded-xl bg-moss-soft text-moss px-4 py-2.5 text-[17px]" role="status">Saved. All screens now use these values.</p>{% endif %}
+
+<section class="card pad mt-8" aria-labelledby="ai-title">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 id="ai-title" class="h2">AI Copilot</h2>
+      <p class="muted mt-1 max-w-[60ch]">Keys are read from the server's environment (<code>.env</code> locally, environment variables when deployed). They never reach the browser.</p>
+    </div>
+    <button type="button" class="btn-secondary" hx-post="/copilot/test" hx-target="#ai-test" hx-indicator="#ai-test-loading">Test AI connection</button>
+  </div>
+  <ul class="mt-5 grid sm:grid-cols-2 gap-3">
+    {% for key in ["gemini", "groq"] %}{% set p = providers[key] %}
+    <li class="rounded-2xl bg-paper px-4 py-3.5">
+      <div class="flex items-center justify-between gap-3">
+        <span class="font-semibold">{{ p.label }}</span>
+        {% if p.configured %}<span class="pill bg-moss-soft text-moss">Key set</span>{% else %}<span class="pill bg-faint text-muted">No key</span>{% endif %}
+      </div>
+      <p class="text-sm muted mt-1">Model: {{ p.model }}</p>
+      {% if not p.configured %}<a class="link text-sm" href="{{ p.key_url }}" target="_blank" rel="noopener">Get a free key</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <p id="ai-test-loading" class="htmx-indicator text-sm muted mt-3">Testing both providers…</p>
+  <div id="ai-test" class="mt-3" aria-live="polite"></div>
+</section>
+
+<form method="post" action="/settings" class="mt-6 space-y-6">
+  <section class="card pad">
+    <h2 class="h2">Invested portfolio</h2>
+    <p class="text-sm muted mt-1">Total: {{ inr(a.invested) }}</p>
+    <div class="grid sm:grid-cols-4 gap-4 mt-4">
+      {% for k in ASSET_KEYS %}
+      <label class="block"><span class="text-sm muted">{{ ASSET_LABELS[k] }} (₹)</span>
+        <input class="field mt-1" name="h_{{ k }}" inputmode="numeric" data-indian-number value="{{ inr(p.holdings.get(k))[1:] }}"></label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card pad">
+    <h2 class="h2">Accessible cash</h2>
+    <p class="text-sm muted mt-1">Kept separate from the invested portfolio.</p>
+    <div class="grid sm:grid-cols-2 gap-4 mt-4">
+      <label class="block"><span class="text-sm muted">Accessible cash (₹)</span><input class="field mt-1" name="cash" inputmode="numeric" data-indian-number value="{{ inr(p.cash)[1:] }}"></label>
+      <label class="block"><span class="text-sm muted">Liquidity buffer you want to keep (₹)</span><input class="field mt-1" name="liquidity_buffer" inputmode="numeric" data-indian-number value="{{ inr(p.liquidity_buffer)[1:] }}"></label>
+    </div>
+  </section>
+
+  <section class="card pad">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 class="h2">Target allocation (%)</h2>
+      <button form="target-from-current" class="btn-quiet !min-h-[36px] !py-1.5">Set to current allocation</button>
+    </div>
+    <div class="grid sm:grid-cols-4 gap-4 mt-4">
+      {% for k in ASSET_KEYS %}
+      <label class="block"><span class="text-sm muted">{{ ASSET_LABELS[k] }} <span class="text-[0.85rem]">(now {{ num(current_alloc[k], 1) }}%)</span></span>
+        <input class="field mt-1" name="t_{{ k }}" inputmode="decimal" value="{{ num(p.target_allocation[k], 1) }}"></label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card pad">
+    <h2 class="h2">Illustrative cost assumptions</h2>
+    <p class="text-sm muted mt-1">Mock estimates, not tax or transaction quotes. Applied as a share of the amount drawn.</p>
+    <div class="grid sm:grid-cols-3 gap-4 mt-4">
+      {% for key, label, val in [("mf_tax_rate_pct", "MF mock tax (% of amount)", num(asm.mf_tax_rate_pct, 4)), ("mf_exit_load_pct", "MF mock exit load (%)", num(asm.mf_exit_load_pct)), ("fd_premature_pct", "FD premature-withdrawal impact (%)", num(asm.fd_premature_pct)), ("stocks_friction_pct", "Stocks demo friction (%)", num(asm.stocks_friction_pct)), ("etfs_friction_pct", "ETFs demo friction (%)", num(asm.etfs_friction_pct))] %}
+      <label class="block"><span class="text-sm muted">{{ label }}</span><input class="field mt-1" name="{{ key }}" inputmode="decimal" value="{{ val }}"></label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card pad">
+    <h2 class="h2">Illustrative borrowing</h2>
+    <div class="grid sm:grid-cols-3 gap-4 mt-4">
+      <label class="block"><span class="text-sm muted">Eligible limit (₹)</span><input class="field mt-1" name="borrow_limit" inputmode="numeric" data-indian-number value="{{ inr(asm.borrow_limit)[1:] }}"></label>
+      <label class="block"><span class="text-sm muted">Rate band low (% p.a.)</span><input class="field mt-1" name="borrow_rate_low_pct" inputmode="decimal" value="{{ num(asm.borrow_rate_low_pct) }}"></label>
+      <label class="block"><span class="text-sm muted">Rate band high (% p.a.)</span><input class="field mt-1" name="borrow_rate_high_pct" inputmode="decimal" value="{{ num(asm.borrow_rate_high_pct) }}"></label>
+    </div>
+  </section>
+
+  <section class="card pad">
+    <h2 class="h2">Materiality and behaviour thresholds</h2>
+    <div class="grid sm:grid-cols-4 gap-4 mt-4">
+      <label class="block"><span class="text-sm muted">Portfolio impact (%)</span><input class="field mt-1" name="portfolio_pct" inputmode="decimal" value="{{ num(t.portfolio_pct) }}"></label>
+      <label class="block"><span class="text-sm muted">Allocation move (points)</span><input class="field mt-1" name="allocation_pp" inputmode="decimal" value="{{ num(t.allocation_pp) }}"></label>
+      <label class="block"><span class="text-sm muted">Market move threshold (%)</span><input class="field mt-1" name="market_move_pct" inputmode="decimal" value="{{ num(t.market_move_pct) }}"></label>
+      <label class="block"><span class="text-sm muted">Observed market move this week (%)</span><input class="field mt-1" name="observed_market_move" inputmode="decimal" value="{{ num(p.market_move_pct) }}"><span class="text-[0.85rem] muted">Negative means a fall</span></label>
+    </div>
+  </section>
+
+  <div class="cta-bar flex flex-wrap gap-3"><button class="btn-primary w-full sm:w-auto">Save changes</button></div>
+</form>
+<form id="target-from-current" method="post" action="/settings/target-from-current"></form>
+<form method="post" action="/reset" class="mt-6"><button class="btn-quiet">Reset everything to the demo data</button></form>
+{% endblock %}

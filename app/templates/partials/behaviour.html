@@ -1,0 +1,41 @@
+{% set b = a.behaviour %}
+<section id="behaviour-block" class="card pad" aria-labelledby="bc-title" aria-live="polite">
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <div class="max-w-[62ch]">
+      <div class="flex items-center gap-2.5">
+        <h2 id="bc-title" class="h2">Behaviour check</h2>
+        {% if b.triggered %}<span class="pill bg-amber-soft text-amber">Shown</span>{% else %}<span class="pill bg-faint text-muted">Not triggered</span>{% endif %}
+      </div>
+      {% if not b.triggered %}
+      <p class="text-[17px] mt-2"><span class="muted">Reason selected:</span> {{ a.request.reason or "Not selected" }}</p>
+      <p class="text-sm muted mt-1">{{ b.status_copy }}</p>
+      {% elif deferred %}
+      <p class="text-[19px] mt-2">Reminder noted for 2 days from now.</p>
+      <p class="text-sm muted mt-1">Prototype only, so no reminder is actually sent. You can still continue now.</p>
+      {% elif acknowledged %}
+      <p class="text-[19px] mt-2">Continuing with your withdrawal.</p>
+      <p class="text-sm muted mt-1">Thanks. Nothing else to check here.</p>
+      {% else %}
+      <p class="text-[22px] mt-2 font-medium">{{ b.message }}</p>
+      <p class="text-sm muted mt-1">Inform, don't obstruct. You can continue at any time.</p>
+      {% endif %}
+    </div>
+
+    <label class="flex items-center gap-3 shrink-0 cursor-pointer rounded-xl border border-dashed border-line px-3 py-2">
+      <span class="text-sm"><span class="block">Simulate market behaviour check</span><span class="block text-[0.85rem] muted">Prototype demonstration only</span></span>
+      <button type="button" role="switch" aria-checked="{{ 'true' if state.simulate_behaviour else 'false' }}" aria-label="Simulate market behaviour check"
+              class="relative w-11 h-6 rounded-full transition-colors {{ 'bg-brand' if state.simulate_behaviour else 'bg-line' }}"
+              hx-post="/withdraw/behaviour/toggle" hx-target="#behaviour-block" hx-swap="outerHTML">
+        <span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform {{ 'translate-x-5' if state.simulate_behaviour else '' }}"></span>
+      </button>
+    </label>
+  </div>
+
+  {% if b.triggered and not acknowledged %}
+  <div class="mt-4 flex flex-col sm:flex-row gap-2">
+    <button class="btn-primary" hx-post="/withdraw/behaviour/continue" hx-target="#behaviour-block" hx-swap="outerHTML">Continue</button>
+    <a class="btn-secondary" href="/withdraw/smaller">Withdraw a smaller amount</a>
+    {% if not deferred %}<button class="btn-secondary" hx-post="/withdraw/behaviour/defer" hx-target="#behaviour-block" hx-swap="outerHTML">Remind me in 2 days</button>{% endif %}
+  </div>
+  {% endif %}
+</section>

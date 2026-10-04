@@ -1,0 +1,8 @@
+.env
+data/*.db
+__pycache__/
+.venv/
+node_modules/
+app/static/vendor/
+.DS_Store
+.pytest_cache/

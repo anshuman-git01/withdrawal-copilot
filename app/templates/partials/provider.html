@@ -1,0 +1,9 @@
+<div id="provider-select" class="flex items-center gap-2 text-sm">
+  <label for="provider" class="muted shrink-0">Explained by</label>
+  <select id="provider" name="provider" class="field !py-1.5 !text-sm" hx-post="/copilot/provider" hx-target="#provider-select" hx-swap="outerHTML">
+    {% for key, p in providers.items() %}
+    <option value="{{ key }}" {% if key == provider %}selected{% endif %}>{{ p.label }}{% if not p.configured %} (no key){% endif %}</option>
+    {% endfor %}
+  </select>
+  {% if not providers[provider].configured %}<span class="text-[0.85rem] text-amber">Key missing; scripted answers used</span>{% endif %}
+</div>

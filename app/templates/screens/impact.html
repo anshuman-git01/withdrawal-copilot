@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import why, illustrative, back %}
+{% block title %}Before you confirm · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set g = a.primary_goal %}
+{% set w = a.request.amount %}
+{% set share = (w / a.invested * 100) if a.invested else 0 %}
+{{ back("/withdraw/need", "Change details") }}
+
+<h1 class="h1">Before you confirm, here's what changes.</h1>
+<p class="mt-3 text-[22px] sm:text-[26px] leading-snug max-w-[48ch]">{{ a.headline }}</p>
+<p class="text-sm muted mt-2">{{ inr(w) }} needed by {{ nice_date(a.request.needed_by) }} for {{ a.request.reason or "an unstated reason" }}.</p>
+
+<div class="mt-8 grid lg:grid-cols-3 gap-4 sm:gap-5">
+  {# Portfolio: the one bold moment of the product #}
+  <section class="card pad lg:col-span-2" aria-labelledby="pf-title">
+    <div class="flex items-baseline justify-between gap-4">
+      <h2 id="pf-title" class="eyebrow">Portfolio</h2>
+      <p class="text-sm muted">{{ inr_short(w) }} of {{ inr_short(a.invested) }} invested portfolio</p>
+    </div>
+    <p class="fig text-[84px] sm:text-[112px] leading-none mt-3 text-brand-bright">{{ pct(a.pct) }}</p>
+    <div class="mt-6" role="img" aria-label="{{ inr_short(w) }} withdrawal shown against {{ inr_short(a.invested) }} invested portfolio">
+      <div class="relative h-14 rounded-2xl bg-faint overflow-hidden border border-line">
+        <div class="absolute inset-y-0 left-0 bg-brand origin-left"
+             style="animation: grow 700ms cubic-bezier(.2,.7,.2,1) both; width: {{ [share, 100] | min }}%; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.14) 0 8px, transparent 8px 16px)"></div>
+        <span class="absolute inset-y-0 left-3 flex items-center text-white text-sm font-medium" {% if share < 14 %}style="display:none"{% endif %}>{{ inr_short(w) }}</span>
+        <span class="absolute inset-y-0 right-3 flex items-center text-sm muted">{{ inr_short(a.invested) }} invested</span>
+      </div>
+      <div class="flex justify-between text-[0.85rem] muted mt-2"><span>Withdrawal</span><span>Remaining {{ inr_short([a.invested - w, 0] | max) }}</span></div>
+    </div>
+    {{ why("portfolio_pct", [inr(w) ~ " withdrawal", "÷ " ~ inr(a.invested) ~ " invested portfolio", "= " ~ num(a.pct, 2) ~ "%", "Displayed as " ~ pct(a.pct), "Accessible cash (" ~ inr(a.cash) ~ ") is not counted as invested portfolio."]) }}
+  </section>
+
+  <section class="card pad flex flex-col" aria-labelledby="mat-title">
+    {% if a.materiality.significant %}
+    <span class="pill bg-amber-soft text-amber self-start">Significant withdrawal</span>
+    <h2 id="mat-title" class="h2 mt-3">Why?</h2>
+    <ul class="mt-2 space-y-2">
+      {% for t in a.materiality.reasons %}
+      <li class="flex gap-2.5 text-[17px]"><svg class="mt-1 shrink-0 text-amber" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>{{ t.reason_copy }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <span class="pill bg-moss-soft text-moss self-start">Not a significant withdrawal</span>
+    <h2 id="mat-title" class="h2 mt-3">Why?</h2>
+    <p class="text-[17px] muted mt-2">None of the four checks is met. You still see the full picture below.</p>
+    {% endif %}
+    <details class="why mt-auto pt-4" data-why="materiality">
+      <summary><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>All four checks</summary>
+      <ul class="mt-2 rounded-2xl bg-faint px-4 py-3 text-sm space-y-2.5">
+        {% for t in a.materiality.triggers %}
+        <li><span class="font-medium">{{ t.name }}:</span> {{ "Met" if t.triggered else "Not met" }}<br><span class="muted">{{ t.detail }}</span></li>
+        {% endfor %}
+        <li class="muted">Any one check makes a withdrawal significant. There is no score.</li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="card pad" aria-labelledby="liq-title">
+    <div class="flex items-center gap-3"><span class="icon-chip !bg-moss-soft !text-moss" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="3"/><path d="M2 10h20M6 15h4"/></svg></span><h2 id="liq-title" class="eyebrow">Liquidity</h2></div>
+    <p class="fig text-[32px] mt-2">{{ inr_short(a.cash) }}</p>
+    <p class="text-[17px] mt-1">accessible cash remains separately available</p>
+    <p class="text-sm muted mt-2">Your accessible cash is not being counted as invested portfolio.</p>
+  </section>
+
+  <section class="card pad flex flex-col" aria-labelledby="goal-title">
+    <div class="flex items-center gap-3"><span class="icon-chip !bg-amber-soft !text-amber" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5"/></svg></span><h2 id="goal-title" class="eyebrow">{{ g.goal.name ~ " goal" if g else "Goals" }}</h2></div>
+    {% if g and g.affected %}
+    <p class="fig text-[32px] mt-2">Trajectory changes</p>
+    <p class="text-sm muted mt-2">Your {{ g.goal.name }} goal {{ "moves below its current trajectory." if g.triggered else "stays on track, with less headroom." }}</p>
+    {% elif g %}
+    <p class="fig text-[32px] mt-2">No change</p>
+    <p class="text-sm muted mt-2">This withdrawal doesn't draw on your {{ g.goal.name }} goal.</p>
+    {% else %}
+    <p class="fig text-[32px] mt-2">No goals tracked</p>
+    <p class="text-sm muted mt-2"><a class="link" href="/goals">Add a goal</a> to see trajectory impact.</p>
+    {% endif %}
+    {% if g %}<a href="/withdraw/goal" class="btn-secondary mt-4 self-start">See goal impact</a>{% endif %}
+  </section>
+
+  <section class="card pad" aria-labelledby="cost-title">
+    <div class="flex items-center gap-3"><span class="icon-chip " aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 8h6M9 11h6M11 8c3 0 3 5 0 5h-2l5 4"/></svg></span><h2 id="cost-title" class="eyebrow">Cost</h2></div>
+    <p class="fig text-[32px] mt-2">{{ inr_short(a.mf.total_cost) }}</p>
+    <p class="text-[17px] mt-1">illustrative MF deductions</p>
+    <dl class="mt-3 text-sm space-y-1">
+      {% for label, v in a.mf.costs %}<div class="flex justify-between gap-3"><dt class="muted">{{ label | replace("Mock estimated tax", "Mock tax") }}</dt><dd class="tabular-nums">{{ inr_short(v) }}</dd></div>{% endfor %}
+      <div class="flex justify-between gap-3 border-t border-line pt-1.5 mt-1.5"><dt>Estimated amount received</dt><dd class="fig">{{ inr_short(a.mf.received) }}</dd></div>
+    </dl>
+    {% set cost_lines = [] %}
+    {% for label, v in a.mf.costs %}{% set _ = cost_lines.append(inr(v) ~ " " ~ label | lower) %}{% endfor %}
+    {{ why("mf_cost", cost_lines + ["= " ~ inr(a.mf.total_cost) ~ " total mock deductions", inr(a.mf.draw) ~ " − " ~ inr(a.mf.total_cost) ~ " = " ~ inr(a.mf.received) ~ " estimated amount received"] + ([] if a.mf.can_fully_cover else ["Mutual Funds cover " ~ inr(a.mf.draw) ~ " of the " ~ inr(w) ~ " needed."])) }}
+    {{ illustrative() }}
+  </section>
+</div>
+
+<div class="mt-5">
+  {% include "partials/behaviour.html" %}
+</div>
+
+<div class="cta-bar mt-8 flex flex-col-reverse sm:flex-row gap-3">
+  <a href="/withdraw/sources" class="btn-primary w-full sm:w-auto">Compare funding options</a>
+  {% if g %}<a href="/withdraw/goal" class="btn-secondary w-full sm:w-auto hidden sm:inline-flex">See goal impact</a>{% endif %}
+</div>
+{% endblock %}

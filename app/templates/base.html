@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Withdrawal Copilot{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23C9411F'/><path d='M9 20h14M11 14h10' stroke='white' stroke-width='3' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  {% if VENDOR %}
+  <script src="/static/vendor/htmx.min.js"></script>
+  <script defer src="/static/vendor/alpine.min.js"></script>
+  {% else %}
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  {% endif %}
+  <script src="/static/app.js" defer></script>
+</head>
+<body class="min-h-screen" x-data="{ copilot: false, menu: false }" @keydown.escape.window="copilot=false; menu=false">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 btn-secondary">Skip to content</a>
+
+  <header class="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-40" style="padding-top: env(safe-area-inset-top)">
+    <div class="mx-auto max-w-page px-4 sm:px-6 h-[72px] flex items-center gap-3 sm:gap-5">
+      <a href="/" class="flex items-center gap-2.5 shrink-0" aria-label="Withdrawal Copilot home">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#C9411F"/><path d="M9 20h14M11 14h10" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+        <span class="font-display font-extrabold tracking-tight text-lg hidden sm:inline">withdrawal copilot</span>
+      </a>
+      <nav class="flex items-center gap-1 text-base" aria-label="Main">
+        {% set path = request.url.path %}
+        {% for href, label, active in [("/", "Portfolio", path == "/"), ("/goals", "Goals", path.startswith("/goals")), ("/withdraw/start", "Withdraw", path.startswith("/withdraw"))] %}
+        <a href="{{ href }}" class="px-4 py-2 rounded-full font-medium {{ 'bg-ink text-white' if active else 'text-muted hover:text-ink hover:bg-white' }}" {% if active %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <div class="ml-auto flex items-center gap-2">
+        <span class="pill whitespace-nowrap bg-amber-soft text-amber border border-amber/20" title="All amounts are illustrative. No real money moves.">Demo mode</span>
+        <button type="button" class="btn-secondary !px-4 !py-2 !min-h-[44px]" @click="copilot = true" aria-haspopup="dialog">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+          <span class="hidden sm:inline">Ask Copilot</span>
+        </button>
+        <div class="relative">
+          <button type="button" class="btn-quiet !px-2 !min-h-[40px]" @click="menu = !menu" :aria-expanded="menu" aria-label="More">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+          <div x-cloak x-show="menu" @click.outside="menu=false" class="absolute right-0 mt-2 w-64 card p-2 text-base">
+            <a class="block rounded-2xl px-4 py-2.5 hover:bg-faint" href="/settings">Portfolio &amp; assumptions</a>
+            <a class="block rounded-2xl px-4 py-2.5 hover:bg-faint" href="/metrics">Metrics (case demo)</a>
+            <a class="block rounded-2xl px-4 py-2.5 hover:bg-faint" href="/how-it-works">How it works</a>
+            <form method="post" action="/reset"><button class="w-full text-left rounded-2xl px-4 py-2.5 hover:bg-faint">Reset to demo data</button></form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {% if step %}
+  {% include "partials/progress.html" %}
+  {% endif %}
+
+  <main id="main" class="mx-auto max-w-page px-4 sm:px-6 pt-6 sm:pt-10 pb-36 sm:pb-16">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-line">
+    <div class="mx-auto max-w-page px-4 sm:px-6 py-6 text-sm muted space-y-1 pb-28 sm:pb-6">
+      <p>Demo assumptions are illustrative and may differ from actual tax, exit-load, settlement, lending or transaction terms. Actual outcomes depend on asset, provider, holding period, market conditions and applicable rules.</p>
+      <p>Not financial advice. No real transactions are placed. <a class="link" href="/how-it-works">How it works</a></p>
+    </div>
+  </footer>
+
+  {% include "partials/copilot_panel.html" %}
+</body>
+</html>

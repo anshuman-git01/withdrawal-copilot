@@ -1,0 +1,23 @@
+{# Explainability: every important number can show its working. #}
+{% macro why(topic, lines, title="How is this calculated?") -%}
+<details class="why mt-3" data-why="{{ topic }}">
+  <summary><svg class="chev transition-transform" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>{{ title }}</summary>
+  <div class="mt-2 rounded-2xl bg-faint px-4 py-3 text-sm leading-relaxed tabular-nums space-y-1">
+    {% for l in lines %}<p>{{ l }}</p>{% endfor %}
+  </div>
+</details>
+{%- endmacro %}
+
+{% macro illustrative(text="Illustrative mock estimate — not a tax or transaction quote.") -%}
+<p class="text-[0.85rem] muted mt-2">{{ text }}</p>
+{%- endmacro %}
+
+{% macro status_pill(ok, ok_text, bad_text) -%}
+{% if ok %}<span class="pill bg-moss-soft text-moss">{{ ok_text }}</span>
+{% else %}<span class="pill bg-amber-soft text-amber">{{ bad_text }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro back(href, label="Back") -%}
+<a href="{{ href }}" class="inline-flex items-center gap-1.5 text-sm muted hover:text-ink mb-5">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>{{ label }}</a>
+{%- endmacro %}

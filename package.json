@@ -1,0 +1,9 @@
+{
+  "name": "withdrawal-copilot-css",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.js -i app/static/src/input.css -o app/static/app.css --minify",
+    "watch:css": "tailwindcss -c tailwind.config.js -i app/static/src/input.css -o app/static/app.css --watch"
+  },
+  "devDependencies": { "tailwindcss": "^3.4.17" }
+}

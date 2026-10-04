@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import why, back, illustrative %}
+{% block title %}Sell vs borrow · Withdrawal Copilot{% endblock %}
+{% block content %}
+{% set b = a.borrow %}
+{% set g = a.primary_goal %}
+{% set p = a.plan %}
+{{ back("/withdraw/sources") }}
+<h1 class="h1 max-w-[30ch]">You can fund {{ inr_short(a.request.amount) }} without assuming one answer is best.</h1>
+<p class="lede mt-2">Two routes, the same need. Compare them side by side.</p>
+
+<div class="mt-8 grid md:grid-cols-2 gap-4 sm:gap-5" x-data="{ detail: false }" @keydown.escape.window="detail = false">
+  <section class="card pad flex flex-col" aria-labelledby="sell-title">
+    <h2 id="sell-title" class="h2">Withdraw from investments</h2>
+    <p class="fig text-[46px] leading-none mt-4">{{ inr(a.request.amount) }}</p>
+    <dl class="mt-5 space-y-2.5 text-[17px] flex-1">
+      {% if p %}
+      <div class="flex justify-between gap-4"><dt class="muted">Your funding plan</dt><dd class="text-right">{{ plan_text }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">Illustrative costs</dt><dd class="tabular-nums">{{ inr(p.total_cost) }}</dd></div>
+      <div class="flex justify-between gap-4 border-t border-line pt-2.5"><dt>Estimated amount received</dt><dd class="fig">{{ inr(p.received) }}</dd></div>
+      {% if p.gap %}<div class="text-sm text-amber">{{ inr(p.gap) }} of the need isn't covered by this plan yet.</div>{% endif %}
+      <div class="flex justify-between gap-4"><dt class="muted">Allocation move</dt><dd class="tabular-nums">{{ num(p.allocation_pp, 1) }} pt</dd></div>
+      {% else %}
+      <div class="flex justify-between gap-4"><dt class="muted">Example source</dt><dd>Mutual Funds</dd></div>
+      {% for label, v in a.mf.costs %}
+      <div class="flex justify-between gap-4"><dt class="muted">{{ label | replace("Mock estimated tax", "Mock tax") }}</dt><dd class="tabular-nums">{{ inr(v) }}</dd></div>
+      {% endfor %}
+      <div class="flex justify-between gap-4 border-t border-line pt-2.5"><dt>Estimated amount received</dt><dd class="fig">{{ inr(a.mf.received) }}</dd></div>
+      {% endif %}
+      <div class="flex justify-between gap-4"><dt class="muted">Portfolio impact</dt><dd class="tabular-nums">{{ pct(a.pct) }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">{{ g.goal.name if g else "Goal" }} goal</dt><dd>{{ ("Affected" if g.affected else "Not affected") if g else "None tracked" }}</dd></div>
+    </dl>
+    {{ illustrative("Illustrative mock estimate") }}
+    <form method="post" action="/withdraw/route" class="mt-5"><input type="hidden" name="route" value="sell">
+      <button class="btn-secondary w-full">Explore withdrawal</button></form>
+  </section>
+
+  <section class="card pad flex flex-col" aria-labelledby="borrow-title">
+    <h2 id="borrow-title" class="h2">Borrow against eligible investments</h2>
+    <p class="fig text-[46px] leading-none mt-4">{{ inr(b.borrowable) }}</p>
+    <dl class="mt-5 space-y-2.5 text-[17px] flex-1">
+      <div class="flex justify-between gap-4"><dt class="muted">Eligible limit</dt><dd class="tabular-nums">{{ inr(b.limit) }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">Your need</dt><dd class="tabular-nums">{{ inr(b.need) }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">Within eligible limit</dt><dd>{{ "Yes" if b.within_limit else "No, up to " ~ inr(b.limit) ~ " shown" }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">Remaining borrowing room</dt><dd class="tabular-nums">{{ inr(b.remaining_room) }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">Indicative rate</dt><dd>{{ b.rate_band }}</dd></div>
+      <div class="flex justify-between gap-4 border-t border-line pt-2.5"><dt>Illustrative 1-year interest</dt><dd class="text-right"><span class="fig">{{ inr(b.interest_1y) }}</span><span class="block text-sm muted">at {{ num(b.rate_mid) }}% p.a.</span></dd></div>
+      <div class="flex justify-between gap-4"><dt class="muted">Eligible collateral</dt><dd class="text-right">Stocks + ETFs + eligible Mutual Funds</dd></div>
+    </dl>
+    <p class="text-sm mt-4 rounded-2xl bg-faint px-3 py-2">Pledged assets remain pledged until repayment.</p>
+    {{ illustrative("Illustrative comparison — not a lender quote.") }}
+    <button type="button" class="btn-secondary w-full mt-5" @click="detail = true">Explore borrowing</button>
+  </section>
+
+  <div x-cloak x-show="detail" class="fixed inset-0 z-50 grid place-items-end sm:place-items-center p-0 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="bd-title">
+    <div class="absolute inset-0 bg-ink/30" @click="detail = false"></div>
+    <div class="relative card w-full sm:max-w-lg p-6 rounded-b-none sm:rounded-2xl max-h-[90vh] overflow-y-auto" x-show="detail" x-transition>
+      <div class="flex items-start justify-between gap-4">
+        <h2 id="bd-title" class="h2">Borrowing, in detail</h2>
+        <button type="button" class="btn-quiet !px-2 !min-h-[36px]" @click="detail = false" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="mt-4 space-y-3 text-[17px] leading-relaxed">
+        <p>You'd borrow {{ inr(b.borrowable) }} against eligible investments instead of selling them. They stay invested but pledged until the loan is repaid.</p>
+        <p>The indicative rate is {{ b.rate_band }}. At the illustrative {{ num(b.rate_mid) }}% midpoint, one year of interest on {{ inr(b.borrowable) }} is {{ inr(b.interest_1y) }}. EMI and foreclosure charges are not estimated in this prototype.</p>
+        {% if b.within_limit %}<p>Your need is within the {{ inr(b.limit) }} eligible limit, leaving {{ inr(b.remaining_room) }} of room.</p>
+        {% else %}<p>Your need is above the {{ inr(b.limit) }} eligible limit. The remaining {{ inr(b.need - b.limit) }} would need another source.</p>{% endif %}
+      </div>
+      {{ why("borrow_interest", b.explain) }}
+      <div class="mt-4 text-[0.85rem] muted space-y-1">
+        <p>Illustrative comparison — not financial advice or a lender quote.</p>
+        <p>Actual rate, LTV, collateral eligibility and terms depend on the lender and asset.</p>
+      </div>
+      <div class="mt-6 flex flex-col sm:flex-row gap-2">
+        <form method="post" action="/withdraw/route" class="flex-1"><input type="hidden" name="route" value="borrow">
+          <button class="btn-primary w-full">Decide with borrowing</button></form>
+        <button type="button" class="btn-secondary flex-1" @click="detail = false">Back to comparison</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="mt-8 text-[19px] leading-relaxed max-w-[58ch]">Neither option is automatically better. The right choice depends on your liquidity, goal, costs and repayment ability.</p>
+
+<div class="cta-bar mt-8 flex flex-col sm:flex-row gap-3">
+  <a href="/withdraw/decide" class="btn-primary w-full sm:w-auto">Go to decision</a>
+</div>
+{% endblock %}

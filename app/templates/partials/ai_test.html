@@ -1,0 +1,8 @@
+<ul class="space-y-2" role="status">
+  {% for r in results %}
+  <li class="flex items-start gap-3 rounded-2xl px-4 py-3 {{ 'bg-moss-soft' if r.ok else 'bg-amber-soft' }}">
+    <span class="font-bold {{ 'text-moss' if r.ok else 'text-amber' }}">{{ "Working" if r.ok else "Not working" }}</span>
+    <span><span class="font-semibold">{{ r.label }}:</span> {{ r.detail }}{% if r.ok %} <span class="muted">({{ r.ms }} ms)</span>{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>

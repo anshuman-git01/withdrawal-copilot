@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import back %}
+{% block title %}What do you need? · Withdrawal Copilot{% endblock %}
+{% block content %}
+{{ back("/") }}
+<div class="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-8">
+  <div>
+    <h1 class="h1">What do you need?</h1>
+    <p class="lede mt-2">Tell us the need. We'll show what changes before you withdraw.</p>
+
+    <form method="post" action="/withdraw/need" class="mt-8 space-y-7" id="need-form"
+          hx-post="/withdraw/need/preview" hx-trigger="input delay:300ms, change" hx-target="#need-preview" hx-swap="innerHTML" hx-sync="this:replace">
+      <div>
+        <label for="amount" class="block font-medium mb-2">Amount</label>
+        <div class="relative max-w-sm">
+          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl muted" aria-hidden="true">₹</span>
+          <input id="amount" name="amount" inputmode="numeric" autocomplete="off" required
+                 class="field !text-2xl !py-3.5 !pl-10 fig {{ '!border-cost' if errors.amount }}"
+                 value="{{ inr(form.amount)[1:] if form.amount is number else (form.amount or '') }}"
+                 aria-describedby="amount-help{{ ' amount-err' if errors.amount }}" {% if focus == 'amount' %}autofocus{% endif %}
+                 data-indian-number>
+        </div>
+        <p id="amount-help" class="text-sm muted mt-2">Your invested portfolio is {{ inr(a.invested) }}. Accessible cash of {{ inr(a.cash) }} is separate.</p>
+        {% if errors.amount %}<p id="amount-err" class="text-sm text-cost mt-1">{{ errors.amount }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label for="needed_by" class="block font-medium mb-2">Needed by</label>
+        <input id="needed_by" name="needed_by" type="date" required class="field max-w-sm {{ '!border-cost' if errors.date }}"
+               value="{{ form.needed_by or '' }}" {% if errors.date %}aria-describedby="date-err"{% endif %}>
+        {% if errors.date %}<p id="date-err" class="text-sm text-cost mt-1">{{ errors.date }}</p>{% endif %}
+      </div>
+
+      <fieldset>
+        <legend class="font-medium mb-1">What's it for?</legend>
+        <p class="text-sm muted mb-3">Optional. A clear reason helps us show what matters.</p>
+        <div class="flex flex-wrap gap-2">
+          {% for r in REASONS %}
+          <label class="cursor-pointer">
+            <input type="radio" name="reason" value="{{ r }}" class="peer sr-only" {% if form.reason == r %}checked{% endif %}>
+            <span class="inline-flex rounded-full border border-line bg-white px-4 py-2 text-[17px] peer-checked:border-brand peer-checked:bg-brand peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-brand peer-focus-visible:ring-offset-2 hover:border-ink/30">{{ r }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <button type="button" class="text-sm link mt-3" data-clear-reason>Clear reason</button>
+      </fieldset>
+
+      <div id="need-preview" aria-live="polite">
+        {% with amount = (form.amount if form.amount is number else none), needed_by = (a.request.needed_by if form.amount is number else none), reason = form.reason, v = a.validation, pct_value = (a.pct if form.amount is number else none), goals = a.profile.goals %}
+        {% include "partials/need_preview.html" %}
+        {% endwith %}
+      </div>
+
+      <div class="cta-bar flex flex-col sm:flex-row sm:items-center gap-3">
+        <button type="submit" class="btn-primary w-full sm:w-auto" hx-disable>See what changes</button>
+        <a href="#amount" class="btn-quiet hidden sm:inline-flex" onclick="document.getElementById('amount').focus(); return false;">Change details</a>
+      </div>
+    </form>
+  </div>
+
+  <aside class="hidden lg:block">
+    <div class="card pad sticky top-24">
+      <h2 class="h2">Why we start with the need</h2>
+      <p class="text-[17px] muted mt-2 leading-relaxed">Most investment interfaces ask which holding to redeem. Here you start with what you need, and see what it changes across all your money before choosing a source.</p>
+      <ol class="mt-4 space-y-2 text-[17px]">
+        <li>1. Tell us the need</li><li>2. Understand the impact</li><li>3. Compare sources and borrowing</li><li>4. Decide</li><li>5. Plan your recovery</li>
+      </ol>
+    </div>
+  </aside>
+</div>
+{% endblock %}

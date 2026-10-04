@@ -1,0 +1,42 @@
+<div x-cloak x-show="copilot" class="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="copilot-title">
+  <div class="absolute inset-0 bg-ink/30" @click="copilot=false" x-show="copilot" x-transition.opacity></div>
+  <aside class="absolute right-0 top-0 h-full w-full sm:w-[440px] bg-paper border-l border-line flex flex-col"
+         x-show="copilot" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+>
+    <div class="px-5 pt-5 pb-4 border-b border-line" style="padding-top: max(1.25rem, env(safe-area-inset-top))">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="copilot-title" class="font-display font-extrabold text-2xl tracking-tight">Copilot</h2>
+          <p class="text-sm muted mt-0.5">Explains the numbers in this withdrawal. It doesn't calculate, predict or decide.</p>
+        </div>
+        <button type="button" class="btn-quiet !px-2 !min-h-[36px]" @click="copilot=false" aria-label="Close Copilot">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="mt-3">{% include "partials/provider.html" %}</div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4" id="copilot-scroll">
+      <div class="flex flex-wrap gap-2">
+        {% for qid, label in presets %}
+        <button type="button" class="rounded-full border-2 border-brand-tint bg-white px-4 py-2 text-[0.95rem] font-medium text-left hover:border-brand hover:bg-brand-soft"
+                hx-post="/copilot/ask" hx-vals='{"qid": "{{ qid }}", "screen": "{{ screen }}"}'
+                hx-target="#copilot-thread" hx-swap="beforeend" hx-indicator="#copilot-loading">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <div class="mr-4 rounded-3xl rounded-bl-md bg-white border border-line px-4 py-3 text-[17px] leading-relaxed">Hi! Ask me about any number on this screen. I'll explain where it comes from. The decision stays yours.</div>
+      <div id="copilot-thread" class="space-y-4" aria-live="polite"></div>
+      <div id="copilot-loading" class="htmx-indicator text-sm muted">Explaining…</div>
+    </div>
+
+    <form class="border-t border-line p-4 flex gap-2" hx-post="/copilot/ask" hx-target="#copilot-thread" hx-swap="beforeend"
+          hx-indicator="#copilot-loading" hx-on::after-request="this.reset()" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
+      <input type="hidden" name="screen" value="{{ screen }}">
+      <label for="copilot-text" class="sr-only">Ask a question about this withdrawal</label>
+      <input id="copilot-text" name="text" class="field" placeholder="Ask about these numbers" autocomplete="off" maxlength="500">
+      <button class="btn-primary !px-4">Ask</button>
+    </form>
+    <p class="px-5 pb-4 text-[0.85rem] muted">Verified data, then a deterministic engine, materiality and scenario rules, then this explanation layer. You decide.</p>
+  </aside>
+</div>

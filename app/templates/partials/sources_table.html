@@ -1,0 +1,83 @@
+{% set rows = a.full_cover_sources if full_only else a.sources %}
+{% set g = a.primary_goal %}
+{% macro impact(s, a, g) -%}
+  {% if s.key == "cash" %}<span>No investment liquidation</span>
+  {% if s.liquidity_triggered %}<span class="block text-amber text-sm">Using all of it leaves {{ inr_short(s.cash_after) }}, below your {{ inr_short(a.profile.liquidity_buffer) }} buffer</span>{% endif %}
+  {% else %}
+  <span>{{ pct(s.portfolio_pct) }} portfolio impact</span>
+  {% if s.can_fully_cover and g and g.affected %}<span class="block text-sm muted">{{ g.goal.name }} goal affected</span>{% endif %}
+  <span class="block text-sm {{ 'text-amber' if s.allocation_triggered else 'muted' }}">{{ num(s.allocation_pp, 1) }} pt allocation move{% if s.allocation_triggered %} (above {{ num(a.profile.thresholds.allocation_pp) }} pt){% endif %}</span>
+  {% endif %}
+{%- endmacro %}
+{% macro cost(s) -%}
+  {% if s.key == "cash" %}No investment exit cost
+  {% elif s.costs and s.total_cost %}{% for label, v in s.costs %}{{ inr_short(v) }} {{ label | lower | replace("mock estimated tax", "mock tax") | replace("illustrative premature-withdrawal impact", "mock premature-withdrawal impact") }}{{ " + " if not loop.last }}{% endfor %}
+  {% else %}₹0 demo friction{% endif %}
+{%- endmacro %}
+
+{% if not rows %}
+<div class="card pad"><p>No single source can fully cover {{ inr_short(a.request.amount) }}. Split it across sources below, or compare borrowing.</p></div>
+{% else %}
+{# Desktop table #}
+<div class="hidden md:block card overflow-x-auto">
+  <table class="w-full text-[0.95rem]">
+    <caption class="sr-only">Funding sources compared for {{ inr(a.request.amount) }}</caption>
+    <thead>
+      <tr class="text-left text-sm muted border-b border-line">
+        <th scope="col" class="font-normal px-5 py-3">Source</th>
+        <th scope="col" class="font-normal px-4 py-3">Available</th>
+        <th scope="col" class="font-normal px-4 py-3">Cost / friction</th>
+        <th scope="col" class="font-normal px-4 py-3">Amount received</th>
+        <th scope="col" class="font-normal px-4 py-3">Settlement</th>
+        <th scope="col" class="font-normal px-4 py-3">Goal / portfolio impact</th>
+        <th scope="col" class="px-4 py-3"><span class="sr-only">Action</span></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-line">
+      {% for s in rows %}
+      <tr class="align-top">
+        <th scope="row" class="text-left px-5 py-4 font-bold min-w-[11rem]">{{ s.label }}
+          <span class="block mt-1">{% if s.can_fully_cover %}<span class="pill whitespace-nowrap bg-moss-soft text-moss">Covers full amount</span>{% else %}<span class="pill whitespace-nowrap bg-faint text-muted">Partial source</span>{% endif %}</span>
+        </th>
+        <td class="px-4 py-4 fig">{{ inr_short(s.available) }}</td>
+        <td class="px-4 py-4 text-sm">{{ cost(s) }}{% if s.disclaimer %}<sup class="text-brand font-bold">*</sup>{% endif %}</td>
+        <td class="px-4 py-4"><span class="fig">{{ (("Up to " if not s.can_fully_cover and s.key in ("stocks", "etfs") else "") ~ inr_short(s.received)) }}</span>
+          {% if not s.can_fully_cover %}<span class="block text-[0.85rem] muted">Can contribute up to {{ inr_short(s.available) }}</span>{% endif %}</td>
+        <td class="px-4 py-4 text-sm">{{ s.settlement }}</td>
+        <td class="px-4 py-4 text-sm min-w-[12rem]">{{ impact(s, a, g) }}</td>
+        <td class="px-4 py-4 text-right">
+          {% if s.can_fully_cover %}
+          <form method="post" action="/withdraw/plan"><input type="hidden" name="source" value="{{ s.key }}"><button class="btn-secondary !py-2 !min-h-[38px] whitespace-nowrap">Use this source</button></form>
+          {% else %}<a href="#mix" class="link text-sm whitespace-nowrap">Split amount</a>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# Mobile cards #}
+<ul class="md:hidden space-y-3">
+  {% for s in rows %}
+  <li class="card pad">
+    <div class="flex items-start justify-between gap-3">
+      <h3 class="h2">{{ s.label }}</h3>
+      {% if s.can_fully_cover %}<span class="pill whitespace-nowrap bg-moss-soft text-moss">Covers full amount</span>{% else %}<span class="pill whitespace-nowrap bg-faint text-muted">Partial source</span>{% endif %}
+    </div>
+    <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-[17px]">
+      <div><dt class="text-sm muted">Available</dt><dd class="fig">{{ inr_short(s.available) }}</dd></div>
+      <div><dt class="text-sm muted">Amount received</dt><dd class="fig">{{ inr_short(s.received) }}</dd></div>
+      <div class="col-span-2"><dt class="text-sm muted">Cost / friction</dt><dd>{{ cost(s) }}</dd></div>
+      <div><dt class="text-sm muted">Settlement</dt><dd class="text-sm">{{ s.settlement }}</dd></div>
+      <div><dt class="text-sm muted">Impact</dt><dd class="text-sm">{{ impact(s, a, g) }}</dd></div>
+    </dl>
+    {% if s.disclaimer %}<p class="text-[0.85rem] muted mt-3">{{ s.disclaimer }}</p>{% endif %}
+    {% if s.can_fully_cover %}
+    <form method="post" action="/withdraw/plan" class="mt-4"><input type="hidden" name="source" value="{{ s.key }}"><button class="btn-secondary w-full">Use this source</button></form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+<p class="text-[0.85rem] muted mt-3"><span class="text-brand font-bold">*</span> Stocks and ETFs: actual taxes and charges depend on security, holding period, and transaction details.</p>
+<p class="text-[0.85rem] muted mt-1">Illustrative mock estimate — not a tax or transaction quote. Borrowing can also cover the full amount: see Sell vs Borrow.</p>

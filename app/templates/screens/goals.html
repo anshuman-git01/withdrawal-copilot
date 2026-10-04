@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import status_pill, why %}
+{% block title %}Goals · Withdrawal Copilot{% endblock %}
+{% block content %}
+<h1 class="h1">Goals</h1>
+<p class="lede mt-2">Your goals decide whether a withdrawal changes a trajectory. Projections use your own inputs and are not forecasts.</p>
+{% if saved %}<p class="mt-4 rounded-xl bg-moss-soft text-moss px-4 py-2.5 text-[17px]" role="status">Goals saved.</p>{% endif %}
+
+{% macro goal_form(goal, today_projection) %}
+<form method="post" action="/goals/save" class="grid sm:grid-cols-2 gap-4 mt-4">
+  <input type="hidden" name="id" value="{{ goal.id if goal else '' }}">
+  <label class="block"><span class="text-sm muted">Name</span><input class="field mt-1" name="name" required maxlength="40" value="{{ goal.name if goal else '' }}"></label>
+  <label class="block"><span class="text-sm muted">Linked withdrawal reason</span>
+    <select class="field mt-1" name="category">{% for r in REASONS %}<option {% if goal and goal.category == r %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></label>
+  <label class="block"><span class="text-sm muted">Target amount (₹)</span><input class="field mt-1" name="target_amount" inputmode="numeric" data-indian-number required value="{{ inr(goal.target_amount)[1:] if goal else '' }}"></label>
+  <label class="block"><span class="text-sm muted">Target date</span><input class="field mt-1" type="date" name="target_date" required value="{{ goal.target_date.isoformat() if goal else '' }}"></label>
+  <label class="block"><span class="text-sm muted">Saved towards it today (₹)</span><input class="field mt-1" name="saved_amount" inputmode="numeric" data-indian-number value="{{ inr(goal.saved_amount)[1:] if goal else '' }}"></label>
+  <label class="block"><span class="text-sm muted">Monthly contribution (₹)</span><input class="field mt-1" name="monthly_contribution" inputmode="numeric" data-indian-number value="{{ inr(goal.monthly_contribution)[1:] if goal else '' }}"></label>
+  <label class="block"><span class="text-sm muted">Assumed annual return (%)</span><input class="field mt-1" name="expected_return_pct" inputmode="decimal" value="{{ num(goal.expected_return_pct) if goal else '' }}"></label>
+  <div class="sm:col-span-2 flex flex-wrap gap-2 pt-1"><button class="btn-primary">{{ "Save goal" if goal else "Add goal" }}</button></div>
+</form>
+{% endmacro %}
+
+<div class="mt-8 space-y-5">
+  {% for gi in a.goals %}
+  {% set goal = gi.goal %}
+  <section class="card pad" x-data="{ edit: false }">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="h2">{{ goal.name }}</h2>
+        <p class="text-sm muted mt-0.5">{{ inr(goal.target_amount) }} by {{ nice_date(goal.target_date) }}. Linked to "{{ goal.category }}" withdrawals.</p>
+      </div>
+      {{ status_pill(gi.on_track_before, "On track", "Below current trajectory") }}
+    </div>
+    <dl class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[17px]">
+      <div><dt class="text-sm muted">Saved today</dt><dd class="fig">{{ inr_short(goal.saved_amount) }}</dd></div>
+      <div><dt class="text-sm muted">Monthly</dt><dd class="fig">{{ inr_short(goal.monthly_contribution) }}</dd></div>
+      <div><dt class="text-sm muted">Assumed return</dt><dd class="fig">{{ num(goal.expected_return_pct) }}%</dd></div>
+      <div><dt class="text-sm muted">Projected at target</dt><dd class="fig">{{ inr_short(gi.projected_before) }}</dd></div>
+    </dl>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <button type="button" class="btn-secondary" @click="edit = !edit" :aria-expanded="edit">Edit</button>
+      <form method="post" action="/goals/delete" onsubmit="return confirm('Remove this goal?')"><input type="hidden" name="id" value="{{ goal.id }}"><button class="btn-quiet">Remove</button></form>
+    </div>
+    <div x-cloak x-show="edit">{{ goal_form(goal, gi) }}</div>
+  </section>
+  {% endfor %}
+
+  <section class="card pad" x-data="{ open: {{ 'true' if not a.goals else 'false' }} }">
+    <button type="button" class="h2 flex items-center gap-2" @click="open = !open" :aria-expanded="open">Add a goal</button>
+    <div x-cloak x-show="open">{{ goal_form(none, none) }}</div>
+  </section>
+</div>
+{% endblock %}
